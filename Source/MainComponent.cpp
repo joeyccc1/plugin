@@ -21,11 +21,15 @@ class MainContentComponent   : public AudioAppComponent
 public:
     //==============================================================================
     MainContentComponent()
+        : phase(0.0f),
+          amplitude(0.2f),
+          frequency(220.f),
+          phaseIncrement(0.0f)
     {
         setSize (800, 600);
 
         // specify the number of input and output channels that we want to open
-        setAudioChannels (2, 2);
+        setAudioChannels (0, 1);
     }
 
     ~MainContentComponent()
@@ -43,6 +47,7 @@ public:
         // but be careful - it will be called on the audio thread, not the GUI thread.
 
         // For more details, see the help for AudioProcessor::prepareToPlay()
+        phaseIncrement = frequency * 2.0f * float_Pi / sampleRate;
     }
 
     void getNextAudioBlock (const AudioSourceChannelInfo& bufferToFill) override
@@ -53,7 +58,17 @@ public:
 
         // Right now we are not producing any data, in which case we need to clear the buffer
         // (to prevent the output of random noise)
-        bufferToFill.clearActiveBufferRegion();
+        int startSample = bufferToFill.startSample;
+        int numSamples = bufferToFill.numSamples;
+        AudioSampleBuffer *buffer = bufferToFill.buffer;
+        
+        float *channelData = buffer->getWritePointer(0,startSample);
+        
+        for(int i = 0; i < numSamples; ++i)
+        {
+            channelData[i] = amplitude * std::cos(phase);
+            phase = std::fmod (phase + phaseIncrement, 2.0f * float_Pi);
+        }
     }
 
     void releaseResources() override
@@ -86,8 +101,12 @@ private:
     //==============================================================================
 
     // Your private member variables go here...
+    float phase;
+    float amplitude;
+    float frequency;
+    float phaseIncrement;
 
-
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainContentComponent)
 };
 
