@@ -1,8 +1,6 @@
 /*
   ==============================================================================
-
     This file was auto-generated!
-
   ==============================================================================
 */
 
@@ -66,7 +64,7 @@ public:
         
         for(int i = 0; i < numSamples; ++i)
         {
-            channelData[i] = amplitude * std::cos(phase);
+            channelData[i] = amplitude * std::cos(phase + 2 * r.nextFloat()-1.0f);
             phase = std::fmod (phase + phaseIncrement, 2.0f * float_Pi);
         }
     }
@@ -105,7 +103,7 @@ private:
     float amplitude;
     float frequency;
     float phaseIncrement;
-
+    Random r;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainContentComponent)
 };
