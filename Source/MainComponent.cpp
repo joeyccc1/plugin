@@ -4,7 +4,9 @@
 #include "../JuceLibraryCode/JuceHeader.h"
 
 class MainContentComponent   : public AudioAppComponent,
-                               public Slider::Listener
+                               public Slider::Listener,
+                               public Button::Listener
+
 {
 public:
     MainContentComponent()
@@ -12,12 +14,9 @@ public:
           amplitude(0.2f),
           frequency(220.0f),
           phaseIncrement(0.0f),
-          currentSampleRate(44100.0f)
+          currentSampleRate(44100.0f),
+          waveStatus(1)
     {
-        setSize (800, 600);
-
-        setAudioChannels (0, 1);
-        
         levelSlider.setRange(0.0f, 1.0f);
         levelSlider.setTextBoxStyle (Slider::TextBoxRight, false, 100, 20);
         levelLabel.setText ("Level", dontSendNotification); 
@@ -31,11 +30,29 @@ public:
         freqLabel.setText ("Frequency", dontSendNotification); 
         addAndMakeVisible (freqSlider);
         addAndMakeVisible (freqLabel);
+        
+        squareWave.setColour(TextButton::buttonColourId, Colours::cornflowerblue);
+        squareWave.setButtonText("Square Wave");
+        squareWave.addListener(this);
+        addAndMakeVisible(squareWave);
+        
+        sineWave.setColour(TextButton::buttonColourId, Colours::cornflowerblue);
+        sineWave.setButtonText("Sine Wave");
+        sineWave.addListener(this);
+        addAndMakeVisible(sineWave);
+        
+        setSize (800, 600);
+        
+        setAudioChannels (0, 1);
     }
 
     ~MainContentComponent()
     {
         shutdownAudio();
+        levelSlider.removeListener(this);
+        freqSlider.removeListener(this);
+        squareWave.removeListener(this);
+        sineWave.removeListener(this);
     }
 
     void sliderValueChanged (Slider* slider) override
@@ -43,12 +60,23 @@ public:
         if (slider == &freqSlider)
             updatePhase();
     }
+
+    void buttonClicked (Button* button) override
+    {
+        if (button == &squareWave)
+        {
+            waveStatus = 0;
+        }
+        else if (button == &sineWave)
+        {
+            waveStatus = 1;
+        }
+    }
     
     void updatePhase()
     {
         frequency = (float)freqSlider.getValue();
         phaseIncrement = frequency * 2.0f * float_Pi / currentSampleRate;
-        
     }
     
     void prepareToPlay (int samplesPerBlockExpected, double sampleRate) override
@@ -74,8 +102,23 @@ public:
         
         for(int i = 0; i < numSamples; ++i)
         {
-            channelData[i] = amplitude * std::cos(phase);
-            phase = std::fmod (phase + phaseIncrement, 2.0f * float_Pi);
+            if (waveStatus == 1)
+            {
+                channelData[i] = amplitude * std::sin(phase);
+                phase = std::fmod (phase + phaseIncrement, 2.0f * float_Pi);
+            }
+            else if (waveStatus == 0)
+            {
+                if (std::sin(phase)>0)
+                {
+                    channelData[i] = 1.0f * amplitude;
+                }
+                else if (std::sin(phase)<0)
+                {
+                    channelData[i] = -1.0f * amplitude;
+                }
+                phase = std::fmod (phase + phaseIncrement, 2.0f * float_Pi);
+            }
         }
     }
 
@@ -90,6 +133,8 @@ public:
         levelSlider.setBounds (100, 10, getWidth() - 110, 20);
         freqLabel.setBounds (10, 40, 90, 20);
         freqSlider.setBounds (100, 40, getWidth() - 110, 20);
+        squareWave.setBounds(200, 60, 100, 50);
+        sineWave.setBounds(400, 60, 100, 50);
     }
 
 
@@ -104,6 +149,9 @@ private:
     Label levelLabel; 
     Slider freqSlider;
     Label freqLabel;
+    TextButton squareWave;
+    TextButton sineWave;
+    int waveStatus;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainContentComponent)
 };
