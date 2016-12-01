@@ -1,41 +1,36 @@
-/*
-  ==============================================================================
-    This file was auto-generated!
-  ==============================================================================
-*/
-
 #ifndef MAINCOMPONENT_H_INCLUDED
 #define MAINCOMPONENT_H_INCLUDED
 
 #include "../JuceLibraryCode/JuceHeader.h"
 
-//==============================================================================
-/*
-    This component lives inside our window, and this is where you should put all
-    your controls and content.
-*/
-class MainContentComponent   : public AudioAppComponent
+class MainContentComponent   : public AudioAppComponent,
+                               public Slider::Listener
 {
 public:
-    //==============================================================================
     MainContentComponent()
         : phase(0.0f),
           amplitude(0.2f),
-          frequency(220.f),
-          phaseIncrement(0.0f)
+          frequency(220.0f),
+          phaseIncrement(0.0f),
+          currentSampleRate(44100.0f)
     {
         setSize (800, 600);
 
-        // specify the number of input and output channels that we want to open
         setAudioChannels (0, 1);
-        
         
         levelSlider.setRange(0.0f, 1.0f);
         levelSlider.setTextBoxStyle (Slider::TextBoxRight, false, 100, 20);
-        levelLabel.setText ("Level", dontSendNotification);
-        
+        levelLabel.setText ("Level", dontSendNotification); 
         addAndMakeVisible (levelSlider);
         addAndMakeVisible (levelLabel);
+        
+        freqSlider.setRange(20, 20000);
+        freqSlider.setSkewFactorFromMidPoint (2000.0);
+        freqSlider.addListener (this);
+        freqSlider.setTextBoxStyle (Slider::TextBoxRight, false, 100, 20);
+        freqLabel.setText ("Frequency", dontSendNotification); 
+        addAndMakeVisible (freqSlider);
+        addAndMakeVisible (freqLabel);
     }
 
     ~MainContentComponent()
@@ -43,29 +38,32 @@ public:
         shutdownAudio();
     }
 
-    //==============================================================================
+    void sliderValueChanged (Slider* slider) override
+    {
+        if (slider == &freqSlider)
+            updatePhase();
+    }
+    
+    void updatePhase()
+    {
+        frequency = (float)freqSlider.getValue();
+        phaseIncrement = frequency * 2.0f * float_Pi / currentSampleRate;
+        
+    }
+    
     void prepareToPlay (int samplesPerBlockExpected, double sampleRate) override
     {
-        // This function will be called when the audio device is started, or when
-        // its settings (i.e. sample rate, block size, etc) are changed.
-
-        // You can use this function to initialise any resources you might need,
-        // but be careful - it will be called on the audio thread, not the GUI thread.
-
-        // For more details, see the help for AudioProcessor::prepareToPlay()
-        phaseIncrement = frequency * 2.0f * float_Pi / sampleRate;
+        currentSampleRate = (float)sampleRate;
+        updatePhase();
     }
-
+    
+    void releaseResources() override
+    {
+        
+    }
+    
     void getNextAudioBlock (const AudioSourceChannelInfo& bufferToFill) override
     {
-        // Your audio-processing code goes here!
-
-        // For more details, see the help for AudioProcessor::getNextAudioBlock()
-
-        // Right now we are not producing any data, in which case we need to clear the buffer
-        // (to prevent the output of random noise)
-        
-        
         int startSample = bufferToFill.startSample;
         int numSamples = bufferToFill.numSamples;
         AudioSampleBuffer *buffer = bufferToFill.buffer;
@@ -81,50 +79,36 @@ public:
         }
     }
 
-    void releaseResources() override
-    {
-        // This will be called when the audio device stops, or when it is being
-        // restarted due to a setting change.
-
-        // For more details, see the help for AudioProcessor::releaseResources()
-    }
-
-    //==============================================================================
     void paint (Graphics& g) override
     {
-        // (Our component is opaque, so we must completely fill the background with a solid colour)
         g.fillAll (Colours::white);
-
-
-        // You can add your drawing code here!
     }
 
     void resized() override
     {
-        // This is called when the MainContentComponent is resized.
-        // If you add any child components, this is where you should
-        // update their positions.
         levelLabel.setBounds (10, 10, 90, 20);
         levelSlider.setBounds (100, 10, getWidth() - 110, 20);
+        freqLabel.setBounds (10, 40, 90, 20);
+        freqSlider.setBounds (100, 40, getWidth() - 110, 20);
     }
 
 
 private:
-    //==============================================================================
 
-    // Your private member variables go here...
     float phase;
     float amplitude;
     float frequency;
     float phaseIncrement;
+    float currentSampleRate;
     Slider levelSlider;
-    Label levelLabel;
+    Label levelLabel; 
+    Slider freqSlider;
+    Label freqLabel;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainContentComponent)
 };
 
 
-// (This function is called by the app startup code to create our main component)
 Component* createMainContentComponent()     { return new MainContentComponent(); }
 
 
