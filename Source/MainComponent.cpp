@@ -19,12 +19,23 @@ class MainContentComponent   : public AudioAppComponent
 public:
     //==============================================================================
     MainContentComponent()
-        : amplitude(0.2f)
+        : phase(0.0f),
+          amplitude(0.2f),
+          frequency(220.f),
+          phaseIncrement(0.0f)
     {
         setSize (800, 600);
 
         // specify the number of input and output channels that we want to open
         setAudioChannels (0, 1);
+        
+        
+        levelSlider.setRange(0.0f, 1.0f);
+        levelSlider.setTextBoxStyle (Slider::TextBoxRight, false, 100, 20);
+        levelLabel.setText ("Level", dontSendNotification);
+        
+        addAndMakeVisible (levelSlider);
+        addAndMakeVisible (levelLabel);
     }
 
     ~MainContentComponent()
@@ -42,6 +53,7 @@ public:
         // but be careful - it will be called on the audio thread, not the GUI thread.
 
         // For more details, see the help for AudioProcessor::prepareToPlay()
+        phaseIncrement = frequency * 2.0f * float_Pi / sampleRate;
     }
 
     void getNextAudioBlock (const AudioSourceChannelInfo& bufferToFill) override
@@ -52,15 +64,20 @@ public:
 
         // Right now we are not producing any data, in which case we need to clear the buffer
         // (to prevent the output of random noise)
+        
+        
         int startSample = bufferToFill.startSample;
         int numSamples = bufferToFill.numSamples;
         AudioSampleBuffer *buffer = bufferToFill.buffer;
+        
+        amplitude = (float)levelSlider.getValue();
         
         float *channelData = buffer->getWritePointer(0,startSample);
         
         for(int i = 0; i < numSamples; ++i)
         {
-            channelData[i] = amplitude * (2.0f * r.nextFloat()-1.0f);
+            channelData[i] = amplitude * std::cos(phase);
+            phase = std::fmod (phase + phaseIncrement, 2.0f * float_Pi);
         }
     }
 
@@ -76,7 +93,7 @@ public:
     void paint (Graphics& g) override
     {
         // (Our component is opaque, so we must completely fill the background with a solid colour)
-        g.fillAll (Colours::black);
+        g.fillAll (Colours::white);
 
 
         // You can add your drawing code here!
@@ -87,6 +104,8 @@ public:
         // This is called when the MainContentComponent is resized.
         // If you add any child components, this is where you should
         // update their positions.
+        levelLabel.setBounds (10, 10, 90, 20);
+        levelSlider.setBounds (100, 10, getWidth() - 110, 20);
     }
 
 
@@ -94,8 +113,12 @@ private:
     //==============================================================================
 
     // Your private member variables go here...
+    float phase;
     float amplitude;
-    Random r;
+    float frequency;
+    float phaseIncrement;
+    Slider levelSlider;
+    Label levelLabel;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainContentComponent)
 };
