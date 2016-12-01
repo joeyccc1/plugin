@@ -19,10 +19,7 @@ class MainContentComponent   : public AudioAppComponent
 public:
     //==============================================================================
     MainContentComponent()
-        : phase(0.0f),
-          amplitude(0.2f),
-          frequency(220.f),
-          phaseIncrement(0.0f)
+        : amplitude(0.2f)
     {
         setSize (800, 600);
 
@@ -45,7 +42,6 @@ public:
         // but be careful - it will be called on the audio thread, not the GUI thread.
 
         // For more details, see the help for AudioProcessor::prepareToPlay()
-        phaseIncrement = frequency * 2.0f * float_Pi / sampleRate;
     }
 
     void getNextAudioBlock (const AudioSourceChannelInfo& bufferToFill) override
@@ -64,8 +60,7 @@ public:
         
         for(int i = 0; i < numSamples; ++i)
         {
-            channelData[i] = amplitude * std::cos(phase + 2 * r.nextFloat()-1.0f);
-            phase = std::fmod (phase + phaseIncrement, 2.0f * float_Pi);
+            channelData[i] = amplitude * (2.0f * r.nextFloat()-1.0f);
         }
     }
 
@@ -99,10 +94,7 @@ private:
     //==============================================================================
 
     // Your private member variables go here...
-    float phase;
     float amplitude;
-    float frequency;
-    float phaseIncrement;
     Random r;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainContentComponent)
