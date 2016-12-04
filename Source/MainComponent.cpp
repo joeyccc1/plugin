@@ -41,6 +41,21 @@ public:
         sineWave.addListener(this);
         addAndMakeVisible(sineWave);
         
+        sawWave.setColour(TextButton::buttonColourId, Colours::cornflowerblue);
+        sawWave.setButtonText("Sawtooth Wave");
+        sawWave.addListener(this);
+        addAndMakeVisible(sawWave);
+        
+        triWave.setColour(TextButton::buttonColourId, Colours::cornflowerblue);
+        triWave.setButtonText("Triangle Wave");
+        triWave.addListener(this);
+        addAndMakeVisible(triWave);
+        
+        noise.setColour(TextButton::buttonColourId, Colours::cornflowerblue);
+        noise.setButtonText("Noise!");
+        noise.addListener(this);
+        addAndMakeVisible(noise);
+        
         setSize (800, 600);
         
         setAudioChannels (0, 1);
@@ -53,6 +68,9 @@ public:
         freqSlider.removeListener(this);
         squareWave.removeListener(this);
         sineWave.removeListener(this);
+        sawWave.removeListener(this);
+        triWave.removeListener(this);
+        noise.removeListener(this);
     }
 
     void sliderValueChanged (Slider* slider) override
@@ -70,6 +88,18 @@ public:
         else if (button == &sineWave)
         {
             waveStatus = 1;
+        }
+        else if (button == &sawWave)
+        {
+            waveStatus = 2;
+        }
+        else if (button == &triWave)
+        {
+            waveStatus = 3;
+        }
+        else if (button == &noise)
+        {
+            waveStatus = 4;
         }
     }
     
@@ -102,25 +132,37 @@ public:
         
         for(int i = 0; i < numSamples; ++i)
         {
-            if (waveStatus == 1)
+            switch (waveStatus)
             {
-                channelData[i] = amplitude * std::sin(phase);
-                phase = std::fmod (phase + phaseIncrement, 2.0f * float_Pi);
+                case 0:
+                    if (std::sin(phase)>0)
+                    {
+                        channelData[i] = 1.0f * amplitude;
+                    }
+                    else if (std::sin(phase)<0)
+                    {
+                        channelData[i] = -1.0f * amplitude;
+                    }
+                    break;
+                case 1:
+                    channelData[i] = amplitude * std::sin(phase);
+                    break;
+                case 2:
+                    channelData[i] = amplitude * (1 -(1.0f / float_Pi * phase));
+                    break;
+                case 3:
+                    if (phase < float_Pi)
+                        channelData[i] = amplitude * (-1 + (2 / float_Pi) * phase);
+                    else
+                        channelData[i] = amplitude * (3 - (2 / float_Pi) * phase);
+                    break;
+                case 4:
+                    channelData[i] = r.nextFloat();
+                    break;
             }
-            else if (waveStatus == 0)
-            {
-                if (std::sin(phase)>0)
-                {
-                    channelData[i] = 1.0f * amplitude;
-                }
-                else if (std::sin(phase)<0)
-                {
-                    channelData[i] = -1.0f * amplitude;
-                }
-                phase = std::fmod (phase + phaseIncrement, 2.0f * float_Pi);
-            }
+            phase = std::fmod (phase + phaseIncrement, 2.0f * float_Pi);
         }
-    }
+     }
 
     void paint (Graphics& g) override
     {
@@ -133,8 +175,11 @@ public:
         levelSlider.setBounds (100, 10, getWidth() - 110, 20);
         freqLabel.setBounds (10, 40, 90, 20);
         freqSlider.setBounds (100, 40, getWidth() - 110, 20);
-        squareWave.setBounds(200, 60, 100, 50);
-        sineWave.setBounds(400, 60, 100, 50);
+        squareWave.setBounds(100, 60, 100, 50);
+        sineWave.setBounds(220, 60, 100, 50);
+        sawWave.setBounds(340, 60, 100, 50);
+        triWave.setBounds(460, 60, 100, 50);
+        noise.setBounds(580, 60, 100, 50);
     }
 
 
@@ -151,6 +196,10 @@ private:
     Label freqLabel;
     TextButton squareWave;
     TextButton sineWave;
+    TextButton sawWave;
+    TextButton triWave;
+    TextButton noise;
+    Random r;
     int waveStatus;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainContentComponent)
